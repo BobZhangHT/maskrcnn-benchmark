@@ -37,7 +37,11 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
         # filter crowd annotations
         # TODO might be better to add an extra field
         anno = [obj for obj in anno if obj["iscrowd"] == 0]
-
+        #anno = [obj for obj in anno if obj["iscrowd"] == 1]
+        
+        if not anno:
+            raise ValueError("Image id {} ({}) doesn't have annotations!".format(self.ids[idx], anno))
+        
         boxes = [obj["bbox"] for obj in anno]
         boxes = torch.as_tensor(boxes).reshape(-1, 4)  # guard against no boxes
         target = BoxList(boxes, img.size, mode="xywh").convert("xyxy")
