@@ -29,8 +29,9 @@ MODEL:
     SHARE_BOX_FEATURE_EXTRACTOR: False
   MASK_ON: True
 DATASETS:
-  TRAIN: ("coco_dsbw_train", "coco_dsbw_val") #("coco_2014_train", "coco_2014_valminusminival")
-  TEST: ("coco_dsbw_test",) #("coco_2014_minival",)
+  TRAIN: ("coco_rectal_train",) #("coco_2014_train", "coco_2014_valminusminival")
+  TEST: ("coco_rectal_test",) #("coco_2014_minival",)
+  VAL: ( "coco_rectal_val",)
 DATALOADER:
   SIZE_DIVISIBILITY: 32
 SOLVER:

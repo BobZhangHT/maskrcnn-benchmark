@@ -9,14 +9,20 @@ from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:sk
 
 import argparse
 import os
+import time
 
 import torch
+# configurations
 from maskrcnn_benchmark.config import cfg
+# data provides data loading
 from maskrcnn_benchmark.data import make_data_loader
+# solver provides lr_scheduler and optimizer
 from maskrcnn_benchmark.solver import make_lr_scheduler
 from maskrcnn_benchmark.solver import make_optimizer
+# engine provides training and inference 
 from maskrcnn_benchmark.engine.inference import inference
 from maskrcnn_benchmark.engine.trainer import do_train
+# detector provides the whole model
 from maskrcnn_benchmark.modeling.detector import build_detection_model
 from maskrcnn_benchmark.utils.checkpoint import DetectronCheckpointer
 from maskrcnn_benchmark.utils.collect_env import collect_env_info
@@ -24,6 +30,12 @@ from maskrcnn_benchmark.utils.comm import synchronize, get_rank
 from maskrcnn_benchmark.utils.imports import import_file
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
+
+####################### add on 2019/01/11 ##########################
+from maskrcnn_benchmark.config.paths_catalog import DatasetCatalog
+from pycocotools.coco import COCO
+import numpy as np
+####################### add on 2019/01/11 ##########################
 
 
 def train(cfg, local_rank, distributed):
@@ -60,9 +72,41 @@ def train(cfg, local_rank, distributed):
         start_iter=arguments["iteration"],
     )
 
-    checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
+    checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD # check point period 2500 iterations by default
 
-    do_train(
+    # add 2019/01/11
+    # time.sleep(5)
+    
+    ######## optional for evaluation ######## (2019/01/10)
+    if cfg.DATASETS.VAL:
+        # load masks
+        _,ann_file=DatasetCatalog.DATASETS[cfg.DATASETS.VAL[0]].values()
+        data_dir=DatasetCatalog.DATA_DIR
+        annFile=data_dir+'/'+ann_file
+
+        coco=COCO(annFile)
+        imgIds=coco.getImgIds()
+        imgsInfo=coco.loadImgs(imgIds)
+        whs=[(img['width'],img['height']) for img in imgsInfo]
+
+        print('Loading the masks...')
+        masksgt=[]
+        for i,imgId in enumerate(imgIds):
+            annIds=coco.getAnnIds(imgIds=imgId)
+            anns=coco.loadAnns(annIds)
+            maskgt=[]
+            for ann in anns:
+                try:
+                    maskgt.append(coco.annToMask(ann))
+                except: # avoid non-mask case
+                    maskgt.append(np.zeros(whs[i][::-1]))
+            masksgt.append((np.sum(maskgt,0)>0).astype(np.uint8))
+        print('Loading Complete!')
+
+        # conifgurations for loading the data
+        data_loader_val = make_data_loader(cfg, is_train=False, is_val=True,is_distributed=distributed)[0] 
+        
+        do_train(
         model,
         data_loader,
         optimizer,
@@ -71,7 +115,22 @@ def train(cfg, local_rank, distributed):
         device,
         checkpoint_period,
         arguments,
-    )
+        cfg,# add 2019/01/10
+        data_loader_val,
+        whs,
+        masksgt,
+        )# add 2019/01/11 
+    else:
+        do_train(
+        model,
+        data_loader,
+        optimizer,
+        scheduler,
+        checkpointer,
+        device,
+        checkpoint_period,
+        arguments,)
+    ######## optional for evaluation ######## 
 
     return model
 
@@ -107,6 +166,7 @@ def test(cfg, model, distributed):
 
 
 def main():
+    # define some parser to modify the model arguments
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")
     parser.add_argument(
         "--config-file",
@@ -139,7 +199,7 @@ def main():
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )
-
+    # merge the configurations
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     cfg.freeze()

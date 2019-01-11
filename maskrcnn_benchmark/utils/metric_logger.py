@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 from collections import defaultdict
-from collections import deque
+from collections import deque # deque is a special object similar with list but can be operated via both sides rather than one side.
 
 import torch
 
@@ -11,18 +11,18 @@ class SmoothedValue(object):
     """
 
     def __init__(self, window_size=20):
-        self.deque = deque(maxlen=window_size)
+        self.deque = deque(maxlen=window_size) # the length is fixed as 20, element entried from rightside and outdated info is discarded from left side. 
         self.series = []
         self.total = 0.0
         self.count = 0
 
     def update(self, value):
         self.deque.append(value)
-        self.series.append(value)
+        self.series.append(value) # seems to be useless?
         self.count += 1
         self.total += value
 
-    @property
+    @property # so we can call meter.median directly
     def median(self):
         d = torch.tensor(list(self.deque))
         return d.median().item()
@@ -56,11 +56,11 @@ class MetricLogger(object):
             return self.__dict__[attr]
         raise AttributeError("'{}' object has no attribute '{}'".format(
                     type(self).__name__, attr))
-
-    def __str__(self):
+ 
+    def __str__(self): # __str__ is called when apply 'print' on this class
         loss_str = []
         for name, meter in self.meters.items():
             loss_str.append(
-                "{}: {:.4f} ({:.4f})".format(name, meter.median, meter.global_avg)
+                "{}: {:.4f} ({:.4f})".format(name, meter.median, meter.global_avg) # name: metric name, # meter.median ()
             )
         return self.delimiter.join(loss_str)
