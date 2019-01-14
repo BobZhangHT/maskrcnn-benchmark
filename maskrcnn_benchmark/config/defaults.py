@@ -39,18 +39,27 @@ _C.INPUT = CN()
 # Size of the smallest side of the image during training
 _C.INPUT.MIN_SIZE_TRAIN = 256 #800  # (800,)
 # Maximum size of the side of the image during training
-_C.INPUT.MAX_SIZE_TRAIN = 1388 #1333
+_C.INPUT.MAX_SIZE_TRAIN = 256 #1333
 # Size of the smallest side of the image during testing
-_C.INPUT.MIN_SIZE_TEST = 161 #800
+_C.INPUT.MIN_SIZE_TEST = 256 #800
 # Maximum size of the side of the image during testing
-_C.INPUT.MAX_SIZE_TEST = 696 #1333
+_C.INPUT.MAX_SIZE_TEST = 256 #1333
 # Values to be used for image normalization
-_C.INPUT.PIXEL_MEAN = [43.53287505, 39.56061986, 48.22454996] #[102.9801, 115.9465, 122.7717]
+_C.INPUT.PIXEL_MEAN = [21.38971033, 21.38971033, 21.38971033] #[102.9801, 115.9465, 122.7717]
 # Values to be used for image normalization
 _C.INPUT.PIXEL_STD = [1., 1., 1.]
 # Convert image to BGR format (for Caffe2 models), in range 0-255
 _C.INPUT.TO_BGR255 = True
 
+# update on 2019/01/10
+# filp probability
+_C.INPUT.FLIP_PROB_TRAIN = 0.5
+# color jitter prob to choose adjust brightness or contrast
+_C.INPUT.JITTER_PROB_TRAIN = 0.5
+# the lower bound of brightness factor (ub is 1)
+_C.INPUT.BRIGHT_LB_TRAIN = 0.4
+# the lower bound of contrast factor (ub is 1)
+_C.INPUT.CONTRAST_LB_TRAIN = 0.4
 
 # -----------------------------------------------------------------------------
 # Dataset
@@ -60,6 +69,8 @@ _C.DATASETS = CN()
 _C.DATASETS.TRAIN = ()
 # List of the dataset names for testing, as present in paths_catalog.py
 _C.DATASETS.TEST = ()
+# List of the dataset names for validation, as present in paths_catalog.py
+_C.DATASETS.VAL = ()
 
 # -----------------------------------------------------------------------------
 # DataLoader
@@ -179,7 +190,7 @@ _C.MODEL.ROI_BOX_HEAD.PREDICTOR = "FastRCNNPredictor"
 _C.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION = 14
 _C.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO = 0
 _C.MODEL.ROI_BOX_HEAD.POOLER_SCALES = (1.0 / 16,)
-_C.MODEL.ROI_BOX_HEAD.NUM_CLASSES = 2 #81
+_C.MODEL.ROI_BOX_HEAD.NUM_CLASSES = 3 #81
 # Hidden layer dimension when using an MLP for the RoI box head
 _C.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM = 1024
 
@@ -247,7 +258,7 @@ _C.SOLVER.WARMUP_FACTOR = 1.0 / 3
 _C.SOLVER.WARMUP_ITERS = 500
 _C.SOLVER.WARMUP_METHOD = "linear"
 
-_C.SOLVER.CHECKPOINT_PERIOD = 2500
+_C.SOLVER.CHECKPOINT_PERIOD = 100#2500
 
 # Number of images per batch
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will
@@ -269,6 +280,8 @@ _C.TEST.IMS_PER_BATCH = 8
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
-_C.OUTPUT_DIR = "./dsbw_12_28/"
 
+_C.OUTPUT_DIR = "./logs/rectal_benchmark/"
+_C.EVAL_THRESHOLD = 0.5 # the mask threshold for evaluation
+_C.PATIENCE = 5
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")

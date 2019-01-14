@@ -18,7 +18,7 @@ def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True):
     """
     Arguments:
         dataset_list (list[str]): Contains the names of the datasets, i.e.,
-            coco_2014_trian, coco_2014_val, etc
+            coco_2014_train, coco_2014_val, etc
         transforms (callable): transforms to apply to each (image, target) sample
         dataset_catalog (DatasetCatalog): contains the information on how to
             construct a dataset.
@@ -104,7 +104,7 @@ def make_batch_data_sampler(
     return batch_sampler
 
 
-def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
+def make_data_loader(cfg, is_train=True, is_val=False, is_distributed=False, start_iter=0):
     num_gpus = get_world_size()
     if is_train:
         images_per_batch = cfg.SOLVER.IMS_PER_BATCH
@@ -148,7 +148,16 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
         "maskrcnn_benchmark.config.paths_catalog", cfg.PATHS_CATALOG, True
     )
     DatasetCatalog = paths_catalog.DatasetCatalog
-    dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST
+    
+    ################ add validation set ###############(2019/01/10)
+    if is_train:
+        dataset_list=cfg.DATASETS.TRAIN
+    elif is_val:
+        dataset_list=cfg.DATASETS.VAL
+    else:
+        dataset_list=cfg.DATASETS.TEST
+    ###################################################
+    #dataset_list = cfg.DATASETS.TRAIN if is_train else cfg.DATASETS.TEST (revise in 2019/01/10)
 
     transforms = build_transforms(cfg, is_train)
     datasets = build_dataset(dataset_list, transforms, DatasetCatalog, is_train)

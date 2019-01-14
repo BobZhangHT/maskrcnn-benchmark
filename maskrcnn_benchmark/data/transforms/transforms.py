@@ -1,4 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+
+# update
+# 2019/01/10: add rotation, colorjitter
+
 import random
 
 import torch
@@ -69,6 +73,18 @@ class RandomHorizontalFlip(object):
             target = target.transpose(0)
         return image, target
 
+class ColorJitter(object):
+    def __init__(self,bright_lb=0.4,contrast_lb=0.4,prob=0.5):
+        self.b_lb=bright_lb
+        self.c_lb=contrast_lb
+        self.prob=prob
+        
+    def __call__(self,image,target):
+        if random.random()>self.prob:
+            image=F.adjust_brightness(image,random.uniform(self.b_lb,1))
+        else:
+            image=F.adjust_contrast(image,random.uniform(self.c_lb,1))
+        return image,target
 
 class ToTensor(object):
     def __call__(self, image, target):

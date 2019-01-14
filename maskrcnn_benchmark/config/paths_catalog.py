@@ -7,6 +7,18 @@ import os
 class DatasetCatalog(object):
     DATA_DIR = "datasets"
     DATASETS = {
+        "coco_rectal_train":{
+            "img_dir":"rectal/",
+            "ann_file":"rectal/train.json"
+        },
+        "coco_rectal_test":{
+            "img_dir":"rectal/",
+            "ann_file":"rectal/test.json"
+        },
+        "coco_rectal_val":{
+            "img_dir":"rectal/",
+            "ann_file":"rectal/validation.json"
+        },
         "coco_dsbw_train": { # 必须包含coco关键字
             "img_dir":"dsbw/", #这里是訪数据集的主目录,称其为root,訪root会和标注文件中images字段中的file_name指定的路径进行拼接得到图片的完整路径
             "ann_file":"dsbw/train.json" # 标注文件路径
