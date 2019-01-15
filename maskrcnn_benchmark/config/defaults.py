@@ -45,7 +45,7 @@ _C.INPUT.MIN_SIZE_TEST = 256 #800
 # Maximum size of the side of the image during testing
 _C.INPUT.MAX_SIZE_TEST = 256 #1333
 # Values to be used for image normalization
-_C.INPUT.PIXEL_MEAN = [21.38971033, 21.38971033, 21.38971033] #[102.9801, 115.9465, 122.7717]
+_C.INPUT.PIXEL_MEAN = [28.9744663, 28.9744663, 28.9744663] #[102.9801, 115.9465, 122.7717]
 # Values to be used for image normalization
 _C.INPUT.PIXEL_STD = [1., 1., 1.]
 # Convert image to BGR format (for Caffe2 models), in range 0-255
@@ -108,7 +108,7 @@ _C.MODEL.BACKBONE.OUT_CHANNELS = 256 * 4
 _C.MODEL.RPN = CN()
 _C.MODEL.RPN.USE_FPN = False
 # Base RPN anchor sizes given in absolute pixels w.r.t. the scaled network input
-_C.MODEL.RPN.ANCHOR_SIZES = (32, 64, 128) #, 256, 512)
+_C.MODEL.RPN.ANCHOR_SIZES = (32, 64, 128, 256, 512)
 # Stride of the feature map that RPN is attached.
 # For FPN, number of strides should match number of scales
 _C.MODEL.RPN.ANCHOR_STRIDE = (16,)
@@ -190,7 +190,7 @@ _C.MODEL.ROI_BOX_HEAD.PREDICTOR = "FastRCNNPredictor"
 _C.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION = 14
 _C.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO = 0
 _C.MODEL.ROI_BOX_HEAD.POOLER_SCALES = (1.0 / 16,)
-_C.MODEL.ROI_BOX_HEAD.NUM_CLASSES = 3 #81
+_C.MODEL.ROI_BOX_HEAD.NUM_CLASSES = 2 #81
 # Hidden layer dimension when using an MLP for the RoI box head
 _C.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM = 1024
 
@@ -258,7 +258,7 @@ _C.SOLVER.WARMUP_FACTOR = 1.0 / 3
 _C.SOLVER.WARMUP_ITERS = 500
 _C.SOLVER.WARMUP_METHOD = "linear"
 
-_C.SOLVER.CHECKPOINT_PERIOD = 100#2500
+_C.SOLVER.CHECKPOINT_PERIOD = 1000#2500
 
 # Number of images per batch
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will
@@ -283,5 +283,5 @@ _C.TEST.IMS_PER_BATCH = 8
 
 _C.OUTPUT_DIR = "./logs/rectal_benchmark/"
 _C.EVAL_THRESHOLD = 0.5 # the mask threshold for evaluation
-_C.PATIENCE = 5
+_C.PATIENCE = 0#5
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")

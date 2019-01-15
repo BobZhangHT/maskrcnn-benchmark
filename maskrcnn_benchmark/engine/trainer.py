@@ -13,11 +13,10 @@ from maskrcnn_benchmark.utils.metric_logger import MetricLogger
 
 ####### add on 2019/01/10 ########
 from maskrcnn_benchmark.engine.inference import inference
-from maskrcnn_benchmark.utils.comm import synchronize
+from maskrcnn_benchmark.utils.comm import synchronize,is_main_process,get_rank
 from maskrcnn_benchmark.utils.validation import EvalMetric
 from maskrcnn_benchmark.utils.earlystop import EarlyStopping
 from maskrcnn_benchmark.modeling.roi_heads.mask_head.inference import Masker
-from ..utils.comm import is_main_process,get_rank
 ##################################
 
 # add on 2019/01/10
@@ -60,7 +59,7 @@ def do_train(
     device,
     checkpoint_period,
     arguments,
-    cfg=None,
+    cfg,
     data_loader_val=None,
     whs=None,
     masksgt=None,
@@ -73,7 +72,6 @@ def do_train(
     start_iter = arguments["iteration"] # 0 at start
     
     output_dir=cfg.OUTPUT_DIR # used for deleting the outdated model to save the memory
-    
     
     ##########################################
     ## early stop ##
@@ -98,6 +96,7 @@ def do_train(
             continue
         
         iteration = iteration + 1
+        #print('iteration:',iteration)
         arguments["iteration"] = iteration
        
         scheduler.step()
@@ -167,7 +166,8 @@ def do_train(
                                         only_predictions=True
                                     )
                 model.train() # reset training
-                synchronize() # 同步所有过程
+                if get_world_size()>=2:
+                    synchronize() # 同步所有过程
                 
                 if is_main_process():
                     # compute dice coefficient
@@ -184,10 +184,13 @@ def do_train(
                         maskdt=(maskdt>0).astype(np.uint8)
                         masksdt.append(maskdt)
                     print('Loading Complete!')
-                    mean_dice=EvalMetric(masksgt,masksdt).mean_dice
-                    #print('The shape of gt and dt are: {} and {}'.format(masksgt[0].shape,masksdt[0].shape))
-                    print('The length of gt and dt are: {} and {}'.format(len(masksgt),len(masksdt)))
-                    logger.info('The mean dice coefficient: {}'.format(mean_dice))
+                    try:
+                        mean_dice=EvalMetric(masksgt,masksdt).mean_dice
+                        #print('The shape of gt and dt are: {} and {}'.format(masksgt[0].shape,masksdt[0].shape))
+                        #print('The length of gt and dt are: {} and {}'.format(len(masksgt),len(masksdt)))
+                        logger.info('The mean dice coefficient: {}'.format(mean_dice))
+                    except:
+                        print('More iterations are required to conduct the validation.')
                 
                     ## early stop ##
                     if 'early_stopping' in dir():
@@ -200,6 +203,7 @@ def do_train(
                             break
             #############################################################
         if iteration == max_iter:
+            clean_model_cache(output_dir)
             checkpointer.save("model_final", **arguments)
 
     total_training_time = time.time() - start_training_time
@@ -225,22 +229,15 @@ def do_train(
 #     logger.info("Start training")
 #     meters = MetricLogger(delimiter="  ")
 #     max_iter = len(data_loader)
-#     start_iter = arguments["iteration"] # 0 at start
-#     model.train() # begin training
-#     start_training_time = time.time() 
+#     start_iter = arguments["iteration"]
+#     model.train()
+#     start_training_time = time.time()
 #     end = time.time()
 #     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
 #         data_time = time.time() - end
-        
-#         # add ignore 
-#         if len(targets[0]) < 1:
-#             print('num_boxes: ', len(targets[0]))
-#             continue
-        
 #         iteration = iteration + 1
 #         arguments["iteration"] = iteration
-       
-        
+
 #         scheduler.step()
 
 #         images = images.to(device)
@@ -265,8 +262,7 @@ def do_train(
 
 #         eta_seconds = meters.time.global_avg * (max_iter - iteration)
 #         eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
-        
-#         # give all the information
+
 #         if iteration % 20 == 0 or iteration == max_iter:
 #             logger.info(
 #                 meters.delimiter.join(
@@ -287,7 +283,6 @@ def do_train(
 #             )
 #         if iteration % checkpoint_period == 0:
 #             checkpointer.save("model_{:07d}".format(iteration), **arguments)
-#             # add validation inference here
 #         if iteration == max_iter:
 #             checkpointer.save("model_final", **arguments)
 

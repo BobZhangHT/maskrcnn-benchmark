@@ -37,6 +37,54 @@ from pycocotools.coco import COCO
 import numpy as np
 ####################### add on 2019/01/11 ##########################
 
+# def train(cfg, local_rank, distributed):
+#     model = build_detection_model(cfg)
+#     device = torch.device(cfg.MODEL.DEVICE)
+#     model.to(device)
+
+#     optimizer = make_optimizer(cfg, model)
+#     scheduler = make_lr_scheduler(cfg, optimizer)
+
+#     if distributed:
+#         model = torch.nn.parallel.DistributedDataParallel(
+#             model, device_ids=[local_rank], output_device=local_rank,
+#             # this should be removed if we update BatchNorm stats
+#             broadcast_buffers=False,
+#         )
+
+#     arguments = {}
+#     arguments["iteration"] = 0
+
+#     output_dir = cfg.OUTPUT_DIR
+
+#     save_to_disk = get_rank() == 0
+#     checkpointer = DetectronCheckpointer(
+#         cfg, model, optimizer, scheduler, output_dir, save_to_disk
+#     )
+#     extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
+#     arguments.update(extra_checkpoint_data)
+
+#     data_loader = make_data_loader(
+#         cfg,
+#         is_train=True,
+#         is_distributed=distributed,
+#         start_iter=arguments["iteration"],
+#     )
+
+#     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
+
+#     do_train(
+#         model,
+#         data_loader,
+#         optimizer,
+#         scheduler,
+#         checkpointer,
+#         device,
+#         checkpoint_period,
+#         arguments,
+#     )
+
+#     return model
 
 def train(cfg, local_rank, distributed):
     model = build_detection_model(cfg)
@@ -73,9 +121,6 @@ def train(cfg, local_rank, distributed):
     )
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD # check point period 2500 iterations by default
-
-    # add 2019/01/11
-    # time.sleep(5)
     
     ######## optional for evaluation ######## (2019/01/10)
     if cfg.DATASETS.VAL:
@@ -96,16 +141,14 @@ def train(cfg, local_rank, distributed):
             anns=coco.loadAnns(annIds)
             maskgt=[]
             for ann in anns:
-                try:
-                    maskgt.append(coco.annToMask(ann))
-                except: # avoid non-mask case
-                    maskgt.append(np.zeros(whs[i][::-1]))
+                maskgt.append(coco.annToMask(ann))
             masksgt.append((np.sum(maskgt,0)>0).astype(np.uint8))
         print('Loading Complete!')
 
         # conifgurations for loading the data
         data_loader_val = make_data_loader(cfg, is_train=False, is_val=True,is_distributed=distributed)[0] 
         
+        print('Training with validation set.')
         do_train(
         model,
         data_loader,
@@ -121,6 +164,7 @@ def train(cfg, local_rank, distributed):
         masksgt,
         )# add 2019/01/11 
     else:
+        print('Training without validation set.')
         do_train(
         model,
         data_loader,
@@ -129,7 +173,8 @@ def train(cfg, local_rank, distributed):
         checkpointer,
         device,
         checkpoint_period,
-        arguments,)
+        arguments,
+        cfg,) # add 2019/01/14
     ######## optional for evaluation ######## 
 
     return model
