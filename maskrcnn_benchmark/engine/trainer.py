@@ -176,21 +176,22 @@ def do_train(
                     masksdt=[]
                     for i,prediction in enumerate(predictions):
                         prediction=prediction.resize(whs[i])
-                        maskdt=prediction.get_field('mask')
-                        if list(maskdt.shape[-2:]) != list(whs[i][::-1]):
-                            maskdt = masker(maskdt.expand(1, -1, -1, -1, -1), prediction)
-                            maskdt = maskdt[0]
-                        maskdt=maskdt.numpy().sum((0,1))
-                        maskdt=(maskdt>0).astype(np.uint8)
+                        if not len(prediction):
+                            # if num of box is 0, there is no mask (2019/01/16)
+                            maskdt=np.zeros(tuple(whs[i][::-1]),dtype=np.uint8)
+                        else:
+                            maskdt=prediction.get_field('mask')
+                            if list(maskdt.shape[-2:]) != list(whs[i][::-1]):
+                                maskdt = masker(maskdt.expand(1, -1, -1, -1, -1), prediction)
+                                maskdt = maskdt[0]
+                            maskdt=maskdt.numpy().sum((0,1))
+                            maskdt=(maskdt>0).astype(np.uint8)
                         masksdt.append(maskdt)
                     print('Loading Complete!')
-                    try:
-                        mean_dice=EvalMetric(masksgt,masksdt).mean_dice
-                        #print('The shape of gt and dt are: {} and {}'.format(masksgt[0].shape,masksdt[0].shape))
-                        #print('The length of gt and dt are: {} and {}'.format(len(masksgt),len(masksdt)))
-                        logger.info('The mean dice coefficient: {}'.format(mean_dice))
-                    except:
-                        print('More iterations are required to conduct the validation.')
+                    mean_dice=EvalMetric(masksgt,masksdt).mean_dice
+                    #print('The shape of gt and dt are: {} and {}'.format(masksgt[0].shape,masksdt[0].shape))
+                    #print('The length of gt and dt are: {} and {}'.format(len(masksgt),len(masksdt)))
+                    logger.info('The mean dice coefficient: {}'.format(mean_dice))
                 
                     ## early stop ##
                     if 'early_stopping' in dir():
