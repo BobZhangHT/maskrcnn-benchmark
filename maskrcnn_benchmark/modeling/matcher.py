@@ -50,12 +50,16 @@ class Matcher(object):
             [0, M - 1] or a negative value indicating that prediction i could not
             be matched.
         """
-        if match_quality_matrix.numel() == 0:
+        if match_quality_matrix.numel() == 0: # numel, count all numbers in a tensor.
             # empty targets or proposals not supported during training
             if match_quality_matrix.shape[0] == 0:
-                raise ValueError(
-                    "No ground-truth boxes available for one of the images "
-                    "during training")
+#                 raise ValueError(
+#                     "No ground-truth boxes available for one of the images "
+#                     "during training")
+                # in this case the M=0 and N=N
+                length = match_quality_matrix.shape[-1] # length=N
+                device = match_quality_matrix.device
+                return torch.ones(length, dtype=torch.int64, device=device) * (-1) # now we suppose we have one matcher with all values being -1. (below the threshold)
             else:
                 raise ValueError(
                     "No proposal boxes available for one of the images "

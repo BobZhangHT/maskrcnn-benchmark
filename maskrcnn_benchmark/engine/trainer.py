@@ -91,11 +91,6 @@ def do_train(
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
         data_time = time.time() - end
         
-        # add ignore 
-        if len(targets[0]) < 1:
-            print('num_boxes: ', len(targets[0]))
-            continue
-        
         iteration = iteration + 1
         #print('iteration:',iteration)
         arguments["iteration"] = iteration

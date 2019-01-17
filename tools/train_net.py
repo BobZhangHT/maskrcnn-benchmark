@@ -90,6 +90,7 @@ from collections import Counter
 
 #     return model
 
+
 def train(cfg, local_rank, distributed):
     model = build_detection_model(cfg)
     device = torch.device(cfg.MODEL.DEVICE)
@@ -114,7 +115,8 @@ def train(cfg, local_rank, distributed):
     checkpointer = DetectronCheckpointer(
         cfg, model, optimizer, scheduler, output_dir, save_to_disk
     )
-    extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT) # load the weight here
+    # don't load the model, training from start
+    extra_checkpoint_data = checkpointer.load() # load the weight here
     arguments.update(extra_checkpoint_data)
 
     data_loader = make_data_loader(
@@ -174,6 +176,9 @@ def train(cfg, local_rank, distributed):
         data_loader_val = make_data_loader(cfg, is_train=False, is_val=True,is_distributed=distributed)[0] 
         
         print('Training with validation set.')
+        
+        #time.sleep(5)
+        
         do_train(
         model,
         data_loader,
@@ -191,6 +196,9 @@ def train(cfg, local_rank, distributed):
         )# add 2019/01/11 
     else:
         print('Training without validation set.')
+        
+        #time.sleep(5)
+        
         do_train(
         model,
         data_loader,

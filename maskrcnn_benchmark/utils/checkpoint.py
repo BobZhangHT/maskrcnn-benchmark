@@ -49,7 +49,7 @@ class Checkpointer(object):
         torch.save(data, save_file)
         self.tag_last_checkpoint(save_file)
 
-    def load(self, f=None):
+    def load(self, f=None,init=False):
         if self.has_checkpoint():
             # override argument with existing checkpoint
             f = self.get_checkpoint_file()
@@ -59,6 +59,14 @@ class Checkpointer(object):
             return {}
         self.logger.info("Loading checkpoint from {}".format(f))
         checkpoint = self._load_file(f)
+        ###################### 2019/01/19 ######################
+        # see: https://github.com/facebookresearch/maskrcnn-benchmark/issues/166
+        # see: https://github.com/facebookresearch/maskrcnn-benchmark/issues/15
+        if init:
+            checkpoint['model'] = {k.replace('module.', ''): v for k, v in checkpoint['model'].items()
+                                    if 'cls_score' not in k and 'bbox_pred' not in k and \
+                                   'mask_fcn_logits' not in k and 'fc' not in k}
+        ###################### 2019/01/19 ######################
         self._load_model(checkpoint)
         if "optimizer" in checkpoint and self.optimizer:
             self.logger.info("Loading optimizer from {}".format(f))

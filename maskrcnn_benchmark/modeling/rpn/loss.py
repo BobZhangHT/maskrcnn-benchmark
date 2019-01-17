@@ -36,6 +36,8 @@ class RPNLossComputation(object):
     def match_targets_to_anchors(self, anchor, target):
         match_quality_matrix = boxlist_iou(target, anchor)
         matched_idxs = self.proposal_matcher(match_quality_matrix)
+        # matched idx is a tensor with entries as -1(low,negative) -2(intermediate,abandon) 1(above,positive)
+        
         # RPN doesn't need any fields from target
         # for creating the labels, so clear them all
         target = target.copy_with_fields([])
@@ -43,7 +45,14 @@ class RPNLossComputation(object):
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
         # out of bounds
-        matched_targets = target[matched_idxs.clamp(min=0)]
+        
+        # add 2019/01/17
+        if matched_idxs.clamp(min=0).sum() > 0:
+            matched_targets = target[matched_idxs.clamp(min=0)]
+        else:
+            matched_targets = target
+            
+        # matched_targets = target[matched_idxs.clamp(min=0)]
         matched_targets.add_field("matched_idxs", matched_idxs)
         return matched_targets
 
@@ -54,6 +63,7 @@ class RPNLossComputation(object):
             matched_targets = self.match_targets_to_anchors(
                 anchors_per_image, targets_per_image
             )
+            # return matched_targets with the field 'matched_idxs' like tensor([-1,-2,1,-1,1]) (here number of anchor is 5)
 
             matched_idxs = matched_targets.get_field("matched_idxs")
             labels_per_image = matched_idxs >= 0
@@ -66,9 +76,17 @@ class RPNLossComputation(object):
             labels_per_image[inds_to_discard] = -1
 
             # compute regression targets
-            regression_targets_per_image = self.box_coder.encode(
-                matched_targets.bbox, anchors_per_image.bbox
-            )
+            # add 2019/01/17
+            if not matched_targets.bbox.shape[0]:
+                zeros = torch.zeros_like(labels_per_image)
+                regression_targets_per_image = torch.stack((zeros, zeros, zeros, zeros), dim=1)
+            else:
+                regression_targets_per_image = self.box_coder.encode(
+                    matched_targets.bbox, anchors_per_image.bbox
+                )
+#             regression_targets_per_image = self.box_coder.encode(
+#                 matched_targets.bbox, anchors_per_image.bbox
+#             )
 
             labels.append(labels_per_image)
             regression_targets.append(regression_targets_per_image)
