@@ -8,14 +8,14 @@ def build_transforms(cfg, is_train=True):
     if is_train:
         min_size = cfg.INPUT.MIN_SIZE_TRAIN
         max_size = cfg.INPUT.MAX_SIZE_TRAIN
-        # flip_prob = cfg.INPUT.FLIP_PROB_TRAIN #0.5
-        bright_lb = cfg.INPUT.BRIGHT_LB_TRAIN #0.4
-        contrast_lb = cfg.INPUT.CONTRAST_LB_TRAIN #0.4
+        flip_prob = cfg.INPUT.FLIP_PROB_TRAIN #0.5
+        bright_lb = cfg.INPUT.BRIGHT_LB_TRAIN #0.5
+        contrast_lb = cfg.INPUT.CONTRAST_LB_TRAIN #0.5
         jitter_prob = cfg.INPUT.JITTER_PROB_TRAIN # 0.5
     else:
         min_size = cfg.INPUT.MIN_SIZE_TEST
         max_size = cfg.INPUT.MAX_SIZE_TEST
-        # flip_prob = 0
+        flip_prob = 0
         bright_lb = 1
         contrast_lb = 1
         jitter_prob = 0.5

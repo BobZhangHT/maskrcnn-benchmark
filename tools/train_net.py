@@ -37,6 +37,10 @@ from pycocotools.coco import COCO
 import numpy as np
 ####################### add on 2019/01/11 ##########################
 
+####################### add on 2019/01/16 ##########################
+from collections import Counter
+####################### add on 2019/01/11 ##########################
+
 # def train(cfg, local_rank, distributed):
 #     model = build_detection_model(cfg)
 #     device = torch.device(cfg.MODEL.DEVICE)
@@ -110,7 +114,7 @@ def train(cfg, local_rank, distributed):
     checkpointer = DetectronCheckpointer(
         cfg, model, optimizer, scheduler, output_dir, save_to_disk
     )
-    extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
+    extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT) # load the weight here
     arguments.update(extra_checkpoint_data)
 
     data_loader = make_data_loader(
@@ -133,17 +137,38 @@ def train(cfg, local_rank, distributed):
         imgIds=coco.getImgIds()
         imgsInfo=coco.loadImgs(imgIds)
         whs=[(img['width'],img['height']) for img in imgsInfo]
+        patients_dict=Counter([info['file_name'].split('/')[3][:6] for info in imgsInfo])
+        inds=np.cumsum(list(patients_dict.values()))-1
 
-        print('Loading the masks...')
         masksgt=[]
+        maskgtstk=[]
+        print('Loading the masks...')
         for i,imgId in enumerate(imgIds):
             annIds=coco.getAnnIds(imgIds=imgId)
             anns=coco.loadAnns(annIds)
             maskgt=[]
             for ann in anns:
-                maskgt.append(coco.annToMask(ann))
-            masksgt.append((np.sum(maskgt,0)>0).astype(np.uint8))
+                if ann['segmentation']:
+                    maskgt.append(coco.annToMask(ann))
+                else:
+                    maskgt.append(np.zeros(tuple(whs[i][::-1]),dtype=np.uint8))
+            maskgtstk.append((np.sum(maskgt,0)>0).astype(np.uint8))
+            if i in inds:
+                maskgtstk=np.stack(maskgtstk,axis=0)
+                masksgt.append(maskgtstk)
+                maskgtstk=[]
         print('Loading Complete!')
+
+#         print('Loading the masks...')
+#         masksgt=[]
+#         for i,imgId in enumerate(imgIds):
+#             annIds=coco.getAnnIds(imgIds=imgId)
+#             anns=coco.loadAnns(annIds)
+#             maskgt=[]
+#             for ann in anns:
+#                 maskgt.append(coco.annToMask(ann))
+#             masksgt.append((np.sum(maskgt,0)>0).astype(np.uint8))
+#         print('Loading Complete!')
 
         # conifgurations for loading the data
         data_loader_val = make_data_loader(cfg, is_train=False, is_val=True,is_distributed=distributed)[0] 
@@ -161,6 +186,7 @@ def train(cfg, local_rank, distributed):
         cfg,# add 2019/01/10
         data_loader_val,
         whs,
+        inds, # add 2019/01/16
         masksgt,
         )# add 2019/01/11 
     else:
