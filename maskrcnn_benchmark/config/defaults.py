@@ -281,7 +281,7 @@ _C.TEST.IMS_PER_BATCH = 8
 # Misc options
 # ---------------------------------------------------------------------------- #
 
-_C.OUTPUT_DIR = "./logs/rectal_1_17/"#'./logs/test/'#"./logs/rectal_benchmark/"
+_C.OUTPUT_DIR = './logs/test/'#"./logs/rectal_1_17/"#'./logs/test/'#"./logs/rectal_benchmark/"
 _C.EVAL_THRESHOLD = 0.5 # the mask threshold for evaluation
 _C.PATIENCE = 5
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")
